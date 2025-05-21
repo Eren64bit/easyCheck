@@ -1,11 +1,10 @@
 #include <stdio.h>
 #include <string.h>
-
+#include <stdbool.h>
 
 
 
 #define MAX_LIMIT 40
-#define BLANKSPACE -1
 #define NORMAL 0
 #define IN_STRING 1
 #define IN_CHAR 2
@@ -18,6 +17,61 @@ double, escape sequences, and comments. (This program is hard if you do it in fu
 //char size = 1 byte
 
 
+typedef struct {
+    char arr[MAX_LIMIT];
+    int top;
+} Stack;
+
+void initialize(Stack *stack){
+    stack->top = -1;
+}
+
+bool isEmpty(Stack *stack) {
+
+    return stack->top == -1;
+}
+
+bool isFull(Stack *stack) {
+    return stack->top == MAX_LIMIT - 1;
+}
+
+void push(Stack *stack, char value) {
+
+    if (isFull(stack)) {
+        printf("Stack Overflow\n");
+        return;
+    }
+
+    stack->arr[++stack->top] = value;
+    printf("Char %c added to stack", value);
+}
+
+char pop(Stack *stack) {
+
+    if (isEmpty(stack)) {
+        printf("Stack Underflow\n");
+        return -1;
+    }
+
+    char popped  = stack->arr[stack->top];
+
+    stack->top--;
+
+    printf("Popped %c from the stack \n", popped);
+    return popped;
+}
+
+char peek(Stack *stack) {
+
+    if (isEmpty(stack)) {
+        printf("Stack is empty\n");
+        return -1;
+    }
+
+    return stack->arr[stack->top];
+}
+
+
 
 int stateMachine(char current, int prev, int state){
 
@@ -26,6 +80,11 @@ int stateMachine(char current, int prev, int state){
         if (prev == '/' && current == '*') return IN_COMMENT;
         if (current == '\"') return IN_STRING;
         if (current == '\'') return IN_CHAR;
+    }else if (state != NORMAL) {
+        if (state == IN_LINE_COMMENT && current == '\n') return NORMAL; // end of comment 
+        if (state == IN_COMMENT && prev == '*' && current == '/') return NORMAL;
+        if (state == IN_STRING && current == '\"' && prev != '//') return NORMAL;
+        if (state == IN_CHAR && current == '\''&&  prev != '//') return NORMAL;
     }
     return state;
 }
@@ -43,7 +102,7 @@ FILE* openFile(char filePath[]){
 }
 
 void readFile(FILE* ptr){
-    int c, prev;
+    int c, prev = 0;
     int state = NORMAL;
 
     while ((c = fgetc(ptr)) != EOF) {
